@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+
+        <title>Liberating Data OS//OS - @kayakr, Catalyst</title>
+
+        <meta name="author" content="Catalyst">
+
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <link rel="stylesheet" href="css/reveal.css">
+        <link rel="stylesheet" href="css/theme/catalyst.css" id="theme">
+
+        <!-- For syntax highlighting -->
+        <!-- <link rel="stylesheet" href="lib/css/zenburn.css"> -->
+        <link rel="stylesheet" href="lib/css/catalyst-syntax.css">
+
+        <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+        <script>
+            if( window.location.search.match( /print-pdf/gi ) ) {
+                var link = document.createElement( 'link' );
+                link.rel = 'stylesheet';
+                link.type = 'text/css';
+                link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+                document.getElementsByTagName( 'head' )[0].appendChild( link );
+            }
+        </script>
+
+        <style>
+            /* Add the ability to omit slides from the printed version (has to be after the print include)*/
+            @media print {
+                .reveal .slides section.no-print {
+                    display: none !important;
+                    visibility: hidden !important;
+                }
+            }
+        </style>
+
+        <!--[if lt IE 9]>
+        <script src="lib/js/html5shiv.js"></script>
+        <![endif]-->
+
+        <!-- Please put any custom styles here -->
+        <style>
+
+        </style>
+    </head>
+
+    <body>
+
+        <div class="reveal">
+
+<!--
+0. Introduction.
+1. Before scraping
+  1.1 Do you need to?
+  1.2 Understanding the page
+2. Scraping with Kimono
+  2.1 Kimono
+  2.2 Using widget on MPs: nzmps
+  2.3 Step through API admin pages on Kimono
+  2.4 Modify results using js:
+      kimmodify=1
+3. Scraping with node.js
+  3.1 node.js equivalent to kimono API.
+4. Scraping with Tabula
+5. Summary
+  5.1 Resources
+    https://github.com/kayakr/parliament.nz
+    http://phantomjs.org/
+    import.io
+    morph.io
+  
+-->
+            <!-- Any section element inside of this container is displayed as a slide -->
+            <div class="slides">
+                <!-- Cover slide -->
+                <section>
+                    <h1 class="catalyst-logo">Catalyst</h1>
+                    <h3>Liberating Data</h3>
+                    <p>How to get data from websites that lack APIs<br/>
+                    using Kimono, node.js</p>
+                    <p class="small-text">
+                        Presented by Jonathan Hunt (<a href="https://twitter.com/kayakr">@kayakr</a>)
+                    </p>
+                </section>
+
+<!-- 0. Introduction -->
+                <!-- Section title slide with big colour dot -->
+                <section>
+                  <section class="title-slide banner-5">
+                      <h2 class="orange">Introduction</h2>
+                      <h3>Scraping? APIs? Who am I?</h3>
+                  </section>
+
+                  <!-- Centered paragraph  -->
+                  <section>
+                    <h3>What is the problem?</h3>
+                    <p>Often websites present information, but don't make data available in a structured way<br/>e.g. as CSV, JSON, XML<br/>
+                    -> "machine-readable"</p>
+                    <p>e.g. List of MPs on parliament.nz</p>
+                    <ul>
+                      <li>Scraping parliament.nz with Kimono</li>
+                      <li>Scraping parliament.nz using node.js</li>
+                      <!--<li>List item</li>-->
+                    </ul>
+                  </section>
+
+                  <section>
+                    <h3>Jonathan Hunt</h3>
+                    <ul>
+                      <li>Web developer: PHP, Javascript, CSS</li>
+                      <li>Open data advocate</li>
+                      <li>FixMyStreet.org.nz</li>
+                      <li>@kayakr on Twitter, Github</li>
+                    </ul>
+                  </section>
+
+                </section>
+
+<!-- 1. before scraping -->
+        <section>
+          <section class="title-slide banner-8">
+            <h2 class="orange">Before scraping</h2>
+          </section>
+
+          <!-- what page are we looking at? -->
+          <section>
+            <img src="img/parliament.nz_mps.png"/>
+          </section>
+
+          <!-- Slide with list items -->
+          <section>
+            <h3>Do you need to do this?</h3>
+            <ul>
+              <li>Read page carefully - RSS? Atom?</li>
+              <li>Search: google et al</li>
+              <li>Is there any API already? (Kimono, etc.)</li>
+              <li>What is the copyright status?</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Understand the page structure</h3>
+            <p>Inspect the page markup</p>
+            <p class="small-text">Chrome/Firefox: right-mouse, Inspect element</p>
+            <p>Are there elements, classes, ids that you can work with?</p>
+            <p>What data is visible (Last name, First name, ...)</p>
+            <p>Hidden? URLs, Ids</p>
+          </section>
+        </section>
+
+<!-- 2. Scraping with kimono -->
+        <section>
+          <section class="title-slide banner-5">
+            <h2 class="orange">Scraping with Kimono</h2>
+          </section>
+
+          <section>
+            <h3>KimonoLabs.com</h3>
+            <p>Friendly tool to create APIs from web pages</p>
+            <ul>
+              <li>Free for public APIs (beer, not libre)</li>
+              <li>Chrome plugin, or bookmarklet</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Kimono API: nzmps</h3>
+            <p><em>Use Kimono to generate a list of MPs</em></p>
+            <ol>
+              <li>Visit source page</li>
+              <li>Enable plugin</li>
+              <li>Interactively add properties</li>
+              <li>Extractor View, Data Model View, Raw Data View</li>
+              <li>Done: generates API (via kimono's servers)</li>
+            </ol>
+            <aside class="notes">
+(assumes Kimono extension installed)
+<ol>
+  <li>Visit page <a href="http://www.parliament.nz/en-nz/mpp/mps/current?Criteria.ViewAll=1">http://www.parliament.nz/en-nz/mpp/mps/current?Criteria.ViewAll=1</a></li>
+  <li>Click Kimono widget</li>
+  <li>Select MP name, (note how similar page elements are highlighted).<br/>
+Click 'tick' to select similar elements<br/>
+Enter 'name' in property label input<br/>
+(note count, does it seem sane?)</li>
+4. Click +, then Party, Electorate. Click 'tick', label as 'party_electorate'
+5. Click Data Model View, for sample of data
+	Click Advanced to see selectors being used, e.g. table > tbody > tr > td > a
+6. Click Raw Data View, to see what JSON, CSV etc. looks like
+	(note href is also extracted)
+	You could just download CSV and be done, if that's your aim.
+7. Go back and add 3rd property (href), then use Advanced, and attributes to break out href into distinct key (instead of property of name).
+8. Click 'Done' to create API
+	Name: nzmps
+	Tag: government
+	Crawl: Daily
+http://www.kimonolabs.com/load?url=http%3A%2F%2Fwww.parliament.nz%2Fen-nz%2Fmpp%2Fmps%2Fcurrent%3FCriteria.ViewAll%3D1
+</ol>
+
+"API created"
+https://www.kimonolabs.com/apis/7k8pg23e
+
+            </aside>
+          </section>
+
+          <section>
+            <h3>Administer your API</h3>
+            <p>Overview of Kimono administration interface</p>
+            <ul>
+              <li>&lsquo;Data preview&rsquo;</li>
+              <li>&lsquo;API docs&rsquo;: sample usage incl. curl, node.js, PHP<br/>
+              <span class="small-text" style="font-size:80%"><em>Note API key</em></span><br/>
+              <span class="small-text" style="font-size:80%">In Terminal, try curl...</span></li>
+              <aside class="notes">
+              <pre>curl --include --request GET "https://www.kimonolabs.com/api/7k8pg23e?apikey=fnPh2z4GBRS9u1WAFRr6UP7NM7Boaf68"</pre>
+<p>More readable if piped into jq:</p>
+<pre>curl --request GET "https://www.kimonolabs.com/api/7k8pg23e?apikey=fnPh2z4GBRS9u1WAFRr6UP7NM7Boaf68" | jq .</pre>
+<pre>kimlimit=5</pre>
+              </aside>
+              <li>&lsquo;Modify results&rsquo;: use javascript to munge data</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Modify results, with javascript (1)</h3>
+            <p>Use example2 as model: .map() works on each row, parse party_electorate and add new distinct key-value pairs splitting on ,</p>
+            <pre style="width:100%; font-size: 0.5em"><code data-trim contenteditable>
+function(data) {
+  function split_party_electorate(row) {
+    // Split on , and trim.
+    var parts = row['party_electorate'].split(',');
+    row['party'] = parts[0].trim();
+    row['electorate'] = parts[1].trim();
+    delete row.party_electorate;
+    return row;
+  }
+
+  for(var collection in data.results) {
+    data.results[collection] = data.results[collection].map(split_party_electorate);
+  }
+
+  return data;
+}
+                    </code></pre>
+            <p>Add parameter <code>kimmodify=1</code> to URL</p>
+
+<aside class="notes">
+  <pre>curl "https://www.kimonolabs.com/api/7k8pg23e?apikey=fnPh2z4GBRS9u1WAFRr6UP7NM7Boaf68&kimmodify=1" | jq .</pre>
+</aside>
+          </section>
+
+          <section>
+            <h3>Modify results, with javascript (2)</h3>
+            <p>Use similar process to breakout last & first names</p>
+            <pre style="width:100%; font-size: 0.5em"><code data-trim contenteditable>
+// in function(data)
+
+ function parse_name(row) {
+    var parts = row.name.split(',');
+    row.lastname = parts[0].trim();
+    row.firstnames = parts[1].trim();
+    row.name = row.firstnames + " " + row.lastname;
+    return row;
+  }
+
+  for(var collection in data.results) {
+    data.results[collection] = data.results[collection].map(split_party_electorate);
+    data.results[collection] = data.results[collection].map(parse_name);
+  }
+                    </code></pre>
+            <p>Add parameter <code>kimmodify=1</code> to URL</p>
+
+<aside class="notes">
+  <pre>curl "https://www.kimonolabs.com/api/7k8pg23e?apikey=fnPh2z4GBRS9u1WAFRr6UP7NM7Boaf68&kimmodify=1" | jq .</pre>
+</aside>
+          </section>
+
+          <section>
+            <h3>More with Kimono</h3>
+            <ul>
+              <li>Timed crawls</li>
+              <li>Using output of one API as input to next</li>
+              <li>nzmp API: parsing roles&hellip;</li>
+            </ul>
+          </section>
+
+        </section>
+
+<!-- 3. Scraping with node.js -->
+        <section>
+          <section class="title-slide banner-5">
+            <h2 class="orange">Scraping with node.js</h2>
+          </section>
+
+          <section>
+            <h3>node.js equivalent to kimono API</h3>
+            <ul>
+              <li>Install <a href="https://nodejs.org/">node.js</a> (<a href="https://iojs.org/">io.js</a>)</li>
+              <li>Use console to test candidate selectors</li>
+            </ul>
+          </section>
+ 
+           <section>
+            <h3>node.js (0)</h3>
+            <ul>
+              <li>package.json<pre style="width:100%; font-size: 0.5em"><code data-trim contenteditable>
+{
+  "name": "parliament.nz-scraper",
+  "version": "0.0.1",
+  "description": "Extract data about MPs from parliament.nz",
+  "main": "nzmps1.js",
+  "scripts": {
+    "start": "node nmps1.js"
+  },
+  "dependencies": {
+    "cheerio": "^0.18.0",
+    "request": "^2.51.0"
+  },
+  "engines": {
+    "node": "0.10.x"
+  },
+
+  "keywords": [
+    "node",
+    "express"
+  ],
+  "license": "GPL"
+}
+</code></pre></li>
+              <li>npm install</li>
+            </ul>
+          </section>
+ 
+           <section>
+            <h3>node nzmps1.js (1)</h3>
+            <ul>
+              <li>Use request to do HTTP Request</li>
+              <li>cheerio to parse page data using CSS selectors</li>
+            </ul>
+            <pre style="width:100%; font-size: 0.5em"><code data-trim contenteditable>
+            var cheerio = require('cheerio');
+var request = require('request');
+
+var base = "http://www.parliament.nz";
+var url = base + "/en-nz/mpp/mps/current?Criteria.ViewAll=1";
+
+var mps = [];
+
+request(url, function (error, response, body) {
+  if (!error && response.statusCode == 200) {
+    var $ = cheerio.load(body);
+
+    // 
+    $('.listing tr td a').each(function(i, element) {
+      var name = $(this).text().trim();
+      var href = $(this).attr('href');
+      mps[i] = {'name': name, 'href': base + href};
+    });
+
+    $('.listing>tbody tr td:last-of-type').each(function(i, element) {
+      mps[i].party_electorate = $(this).text().trim();
+    });
+
+    console.log(JSON.stringify(mps));
+  }
+});
+            </code></pre>
+          </section>
+ 
+        </section>
+
+<!-- 4. Scraping with Tabula -->
+        <section>
+          <section class="title-slide banner-5">
+            <h2 class="orange">Scraping with Tabula</h2>
+          </section>
+
+          <section>
+            <h3>Tabula</h3>
+            <ul>
+              <li><a href="http://tabula.technology/">http://tabula.technology/</a></li>
+              <li>Java web app run locally (<a href="http://127.0.0.1:8080">http://127.0.0.1:8080</a>)</li>
+              <li>Identify rectangular zone on PDF page</li>
+              <li>Output text from PDF</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Install Tabula</h3>
+            <p>CLI version (<a href="https://github.com/tabulapdf/tabula-extractor/wiki/Using-the-command-line-tabula-extractor-tool">install</a>)</p>
+            <p><a href="https://github.com/tabulapdf/tabula-extractor">https://github.com/tabulapdf/tabula-extractor</a></p>
+            <ul>
+              <li><code>rvm install jruby-1.7.15</code></li>
+              <li><code>rvm use jruby-1.7.15</code></li>
+              <li><code>jruby -S gem install tabula-extractor</code></li>
+              <li><code>tabula --help</code></li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Tabula (example)</h3>
+            <ul>
+              <li>http://127.0.0.1:8080/</li>
+              <li>Export as CSV</li>
+              <li>Parse CSV with node.js</li>
+            </ul>
+          </section>
+        </section>
+
+<!-- X. Summary -->
+        <section>
+          <section>
+            <h3>Resources</h3>
+            <ul>
+              <li><a href="https://github.com/kayakr/parliament.nz">github.com/kayakr/parliament.nz</a></li>
+              <li><a href="http://phantomjs.org/">phantomjs.org/</a></li>
+              <li><a href="http://import.io">import.io</a></li>
+              <li><a href="http://morph.io">morph.io</a></li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Go out and scrape!</h3>
+          </section>
+        </section>
+
+
+        <!-- Slide with a large title -->
+        <section>
+          <h2>Large title</h2>
+          <aside class="notes">
+              This will only display in the notes window.
+          </aside>
+        </section>
+
+        <!-- Large image slide -->
+        <section class="image-slide">
+          <h2>Title</h2>
+          <img src="img/800x400.gif" alt="">
+        </section>
+
+        <!-- Slide with list items (list items are displayed at once) -->
+        <section>
+          <h3>List title</h3>
+          <ul>
+            <li>List item <img class="img-right" src="img/300x400.gif" alt="Placeholder image"></li>
+            <li>List item</li>
+            <li>List item</li>
+          </ul>
+        </section>
+
+        <!-- Slide with list items (fragmented list items) -->
+        <section>
+          <h3>Fragmented list</h3>
+          <ul>
+            <li class="fragment">List item</li>
+            <li class="fragment">List item</li>
+            <li class="fragment">List item <img class="img-centered" src="img/500x200.gif" alt="Placeholder image"></li>
+          </ul>
+        </section>
+
+                <!-- Slide with vertical slides underneath  -->
+                <section>
+                    <!-- Horizontal slide (This is one the same level as slide above) -->
+                    <section class="title-slide banner-3">
+                        <h2 class="yellow">Title (press down to see vertical slides)</h2>
+                    </section>
+
+                    <!-- The following slides are vertical, use down arrow key to navigate -->
+          <!-- Centered paragraph  -->
+          <section>
+            <h3>Paragraph</h3>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris at scelerisque eros. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Aliquam placerat posuere nibh vel dapibus.</p>
+          </section>
+
+          <!-- Blockquote  -->
+          <section>
+            <h3>Blockquote</h3>
+            <blockquote class="quotation-marks">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris at scelerisque eros. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Aliquam placerat posuere nibh vel dapibus.
+            </blockquote>
+          </section>
+
+          <!-- Nested lists-->
+          <section>
+            <h3>Nested lists</h3>
+              <ul>
+                <li>One</li>
+                <li>Two</li>
+                <li>Three</li>
+                  <ul>
+                    <li>Nested One</li>
+                    <li>Nested Two</li>
+                  </ul>
+              </ul>
+          </section>
+        </section>
+
+        <!-- Slide with code block -->
+        <section>
+          <h3>Title</h3>
+          <p>Some text</p>
+                    <pre><code data-trim contenteditable>
+function linkify( selector ) {
+    if( supports3DTransforms ) {
+
+        var nodes = document.querySelectorAll( selector );
+
+        for( var i = 0, len = nodes.length; i < len; i++ ) {
+            var node = nodes[i];
+
+            if( !node.className ) {
+                node.className += ' roll';
+            }
+        }
+    }
+}
+                    </code></pre>
+        </section>
+
+                <!-- Slide with full background image -->
+                <section data-background="img/800x600.gif">
+                    <h3>Image backgrounds</h3>
+                </section>
+
+        <!-- Slide with Catalyst slogan -->
+        <section class="image-slide">
+          <img class="cat-slogan-image" src="css/theme/images/freedom-to-innovate.svg" alt="freedom to innovate">
+        </section>
+            </div>
+
+            <div class="footer">
+                <div class="scarf">
+                    <div class="scarf-orange"></div>
+                    <div class="scarf-yellow"></div>
+                    <div class="scarf-blue"></div>
+                    <div class="scarf-green"></div>
+                </div>
+                <div class="footer-inner">
+                    <div>
+                        <!-- NOTE: use only one of these. open-source-technologists is the standard -->
+                        <p class="open-source-technologists">open source technologists</p>
+                        <!-- <p class="freedom-to-innovate">freedom to innovate</p> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <script src="lib/js/head.min.js"></script>
+        <script src="js/reveal.js"></script>
+
+        <script>
+
+            // Full list of configuration options available here:
+            // https://github.com/hakimel/reveal.js#configuration
+            Reveal.initialize({
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+
+                theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+                transition: Reveal.getQueryHash().transition || 'none', // default/cube/page/concave/zoom/linear/fade/none
+
+                // Parallax scrolling
+                // parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+                // parallaxBackgroundSize: '2100px 900px',
+
+                // Optional libraries used to extend on reveal.js
+                dependencies: [
+                    { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+                    { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+                ]
+            });
+
+        </script>
+
+    </body>
+</html>
