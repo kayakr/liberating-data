@@ -71,6 +71,10 @@
 4. Scraping with Tabula
 5. Summary
   5.1 Resources
+    https://github.com/kayakr/parliament.nz
+    http://phantomjs.org/
+    import.io
+    morph.io
   
 -->
             <!-- Any section element inside of this container is displayed as a slide -->
@@ -169,7 +173,13 @@
           <section>
             <h3>Kimono API: nzmps</h3>
             <p><em>Use Kimono to generate a list of MPs</em></p>
-
+            <ol>
+              <li>Visit source page</li>
+              <li>Enable plugin</li>
+              <li>Interactively add properties</li>
+              <li>Extractor View, Data Model View, Raw Data View</li>
+              <li>Done: generates API (via kimono's servers)</li>
+            </ol>
             <aside class="notes">
 (assumes Kimono extension installed)
 <ol>
@@ -218,8 +228,8 @@ https://www.kimonolabs.com/apis/7k8pg23e
           </section>
 
           <section>
-            <h3>Modify results, with javascript</h3>
-            <p>Use example2 as model: .map() works on each row of collection, we want to parse party_electorate and add new distinct values splitting on ,</p>
+            <h3>Modify results, with javascript (1)</h3>
+            <p>Use example2 as model: .map() works on each row, parse party_electorate and add new distinct key-value pairs splitting on ,</p>
             <pre style="width:100%; font-size: 0.5em"><code data-trim contenteditable>
 function(data) {
   function split_party_electorate(row) {
@@ -244,6 +254,42 @@ function(data) {
   <pre>curl "https://www.kimonolabs.com/api/7k8pg23e?apikey=fnPh2z4GBRS9u1WAFRr6UP7NM7Boaf68&kimmodify=1" | jq .</pre>
 </aside>
           </section>
+
+          <section>
+            <h3>Modify results, with javascript (2)</h3>
+            <p>Use similar process to breakout last & first names</p>
+            <pre style="width:100%; font-size: 0.5em"><code data-trim contenteditable>
+// in function(data)
+
+ function parse_name(row) {
+    var parts = row.name.split(',');
+    row.lastname = parts[0].trim();
+    row.firstnames = parts[1].trim();
+    row.name = row.firstnames + " " + row.lastname;
+    return row;
+  }
+
+  for(var collection in data.results) {
+    data.results[collection] = data.results[collection].map(split_party_electorate);
+    data.results[collection] = data.results[collection].map(parse_name);
+  }
+                    </code></pre>
+            <p>Add parameter <code>kimmodify=1</code> to URL</p>
+
+<aside class="notes">
+  <pre>curl "https://www.kimonolabs.com/api/7k8pg23e?apikey=fnPh2z4GBRS9u1WAFRr6UP7NM7Boaf68&kimmodify=1" | jq .</pre>
+</aside>
+          </section>
+
+          <section>
+            <h3>More with Kimono</h3>
+            <ul>
+              <li>Timed crawls</li>
+              <li>Using output of one API as input to next</li>
+              <li>nzmp API: parsing roles&hellip;</li>
+            </ul>
+          </section>
+
         </section>
 
 <!-- 3. Scraping with node.js -->
@@ -251,6 +297,82 @@ function(data) {
           <section class="title-slide banner-5">
             <h2 class="orange">Scraping with node.js</h2>
           </section>
+
+          <section>
+            <h3>node.js equivalent to kimono API</h3>
+            <ul>
+              <li>Install <a href="https://nodejs.org/">node.js</a> (<a href="https://iojs.org/">io.js</a>)</li>
+              <li>Use console to test candidate selectors</li>
+            </ul>
+          </section>
+ 
+           <section>
+            <h3>node.js (0)</h3>
+            <ul>
+              <li>package.json<pre style="width:100%; font-size: 0.5em"><code data-trim contenteditable>
+{
+  "name": "parliament.nz-scraper",
+  "version": "0.0.1",
+  "description": "Extract data about MPs from parliament.nz",
+  "main": "nzmps1.js",
+  "scripts": {
+    "start": "node nmps1.js"
+  },
+  "dependencies": {
+    "cheerio": "^0.18.0",
+    "request": "^2.51.0"
+  },
+  "engines": {
+    "node": "0.10.x"
+  },
+
+  "keywords": [
+    "node",
+    "express"
+  ],
+  "license": "GPL"
+}
+</code></pre></li>
+              <li>npm install</li>
+            </ul>
+          </section>
+ 
+           <section>
+            <h3>node nzmps1.js (1)</h3>
+            <ul>
+              <li>Use request to do HTTP Request</li>
+              <li>cheerio to parse page data using CSS selectors</li>
+            </ul>
+            <pre style="width:100%; font-size: 0.5em"><code data-trim contenteditable>
+            var cheerio = require('cheerio');
+var request = require('request');
+
+var base = "http://www.parliament.nz";
+var url = base + "/en-nz/mpp/mps/current?Criteria.ViewAll=1";
+
+var mps = [];
+
+request(url, function (error, response, body) {
+  if (!error && response.statusCode == 200) {
+    var $ = cheerio.load(body);
+
+    // 
+    $('.listing tr td a').each(function(i, element) {
+      var name = $(this).text().trim();
+      var href = $(this).attr('href');
+      mps[i] = {'name': name, 'href': base + href};
+    });
+
+    $('.listing>tbody tr td:last-of-type').each(function(i, element) {
+      mps[i].party_electorate = $(this).text().trim();
+    });
+
+    console.log(JSON.stringify(mps));
+  }
+});
+            </code></pre>
+          </section>
+ 
         </section>
 
 <!-- 4. Scraping with Tabula -->
@@ -258,11 +380,54 @@ function(data) {
           <section class="title-slide banner-5">
             <h2 class="orange">Scraping with Tabula</h2>
           </section>
+
+          <section>
+            <h3>Tabula</h3>
+            <ul>
+              <li><a href="http://tabula.technology/">http://tabula.technology/</a></li>
+              <li>Java web app run locally (<a href="http://127.0.0.1:8080">http://127.0.0.1:8080</a>)</li>
+              <li>Identify rectangular zone on PDF page</li>
+              <li>Output text from PDF</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Install Tabula</h3>
+            <p>CLI version (<a href="https://github.com/tabulapdf/tabula-extractor/wiki/Using-the-command-line-tabula-extractor-tool">install</a>)</p>
+            <p><a href="https://github.com/tabulapdf/tabula-extractor">https://github.com/tabulapdf/tabula-extractor</a></p>
+            <ul>
+              <li><code>rvm install jruby-1.7.15</code></li>
+              <li><code>rvm use jruby-1.7.15</code></li>
+              <li><code>jruby -S gem install tabula-extractor</code></li>
+              <li><code>tabula --help</code></li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Tabula (example)</h3>
+            <ul>
+              <li>http://127.0.0.1:8080/</li>
+              <li>Export as CSV</li>
+              <li>Parse CSV with node.js</li>
+            </ul>
+          </section>
         </section>
 
 <!-- X. Summary -->
         <section>
-          
+          <section>
+            <h3>Resources</h3>
+            <ul>
+              <li><a href="https://github.com/kayakr/parliament.nz">github.com/kayakr/parliament.nz</a></li>
+              <li><a href="http://phantomjs.org/">phantomjs.org/</a></li>
+              <li><a href="http://import.io">import.io</a></li>
+              <li><a href="http://morph.io">morph.io</a></li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Go out and scrape!</h3>
+          </section>
         </section>
 
 
